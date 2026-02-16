@@ -1,3 +1,8 @@
+> [!NOTE]
+> This fork contains the latest (best-effort) upstream with the changes from https://github.com/tuxinal/Vesktop
+>
+> The patch adds XDG Global Shortcuts support to Vesktop (i.e. push-to-talk on Wayland)
+
 # Vesktop
 
 Vesktop is a custom Discord desktop app

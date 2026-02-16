@@ -20,6 +20,7 @@ import { registerScreenShareHandler } from "./screenShare";
 import { Settings, State } from "./settings";
 import { setAsDefaultProtocolClient } from "./utils/setAsDefaultProtocolClient";
 import { isDeckGameMode } from "./utils/steamOS";
+import { startVenbind } from "./venbind";
 
 console.log("Vesktop v" + app.getVersion());
 
@@ -101,9 +102,16 @@ function init() {
     // In the Flatpak on SteamOS the theme is detected as light, but SteamOS only has a dark mode, so we just override it
     if (isDeckGameMode) nativeTheme.themeSource = "dark";
 
-    app.on("second-instance", (_event, _cmdLine, _cwd, data: any) => {
-        if (data.IS_DEV) app.quit();
-        else if (mainWin) {
+    app.on("second-instance", (_event, cmdLine, _cwd, data: any) => {
+        var keybind = cmdLine.find(x => x.startsWith("--keybind"));
+        if (keybind !== undefined) {
+            var action = keybind.split("=")[1];
+            var keyup: boolean = keybind.startsWith("--keybind-up=") || keybind.startsWith("--keybind=");
+            if ((keyup || keybind.startsWith("--keybind-down=")) && action != null)
+                mainWin.webContents.executeJavaScript(`Vesktop.triggerKeybind("${action}", ${keyup})`);
+        } else if (data.IS_DEV) {
+            app.quit();
+        } else if (mainWin) {
             if (mainWin.isMinimized()) mainWin.restore();
             if (!mainWin.isVisible()) mainWin.show();
             mainWin.focus();
@@ -113,6 +121,7 @@ function init() {
     app.whenReady().then(async () => {
         if (process.platform === "win32") app.setAppUserModelId("dev.vencord.vesktop");
 
+        startVenbind();
         registerScreenShareHandler();
         registerMediaPermissionsHandler();
 
@@ -125,15 +134,24 @@ function init() {
 }
 
 if (!app.requestSingleInstanceLock({ IS_DEV })) {
-    if (IS_DEV) {
-        console.log("Vesktop is already running. Quitting previous instance...");
-        init();
+    if (process.argv.some(x => x.startsWith("--keybind"))) {
+        app.quite();
     } else {
-        console.log("Vesktop is already running. Quitting...");
-        app.quit();
+        if (IS_DEV) {
+            console.log("Vesktop is already running. Quitting previous instance...");
+            init();
+        } else {
+            console.log("Vesktop is already running. Quitting...");
+            app.quit();
+        }
     }
 } else {
-    init();
+    if (process.argv.some(x => x.startsWith("--keybind"))) {
+        console.error("No instances running! cannot issue a keybind!");
+        app.quit();
+    } else {
+        init();
+    }
 }
 
 async function bootstrap() {
