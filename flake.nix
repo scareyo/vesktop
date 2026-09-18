@@ -21,8 +21,8 @@
           version =
             let v = builtins.getEnv "VESKTOP_VERSION";
             in if v != "" then v else (self.dirtyShortRev or self.shortRev or "unknown");
-          electron = pkgs.electron_41;
-          pnpm = pkgs.pnpm_10;
+          electron = pkgs.electron_43;
+          pnpm = pkgs.pnpm_11;
         };
       };
     };
